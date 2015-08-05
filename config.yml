@@ -1,0 +1,22 @@
+---
+
+# SSH user. 'ec2-user' is the default user for AMI based releases.
+# Switch to 'ubuntu' or other if necessary.
+ssh_user: ec2-user
+
+ssh_key: ~/.ssh/orchid-prd-master-key.pem
+
+# Fetch host list. 'static' mode uses hosts.yml file and
+# 'dynamic' uses AWS API.
+fetch_mode: static
+
+# When using 'fetch_mode: dynamic', this fabfile will look into your AWS Account
+# and seek for a Key:Value tag like: 'Role: redis-sentinel'
+
+sentinel:
+    key: Role
+    value: redis-sentinel
+
+redis:
+    key: Role
+    value: redis-server
