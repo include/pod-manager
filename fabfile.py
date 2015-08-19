@@ -41,51 +41,65 @@ sentinel_value = conf['sentinel']['value']
 redis_key = conf['redis']['key']
 redis_value = conf['redis']['value']
 
+def selectHostFile(cluster):
+    global env
+    global master
+    global slaves
+    global sentinel_hosts
+    global redis_hosts
 
-''' read hosts.yml file and set roles accordingly
-'''
-with open('hosts.yml', 'r') as hf:
-    hosts = yaml.safe_load(hf)
+    if cluster == 'redis-cluster':
+        host_file = "hosts.yml"
+    elif cluster == 'redis-cluster-2':
+        host_file = "hosts2.yml"
+    else:
+        print(red("ERROR: Missing cluster!"))
+        sys.exit(1)
 
-if not hosts.has_key('sentinels'):
-    print(red("ERROR: no sentinels section!"))
-    sys.exit(1)
-else:
-    sentinel_hosts = hosts['sentinels'].split(' ')
-    print("Sentinel list:", cyan(sentinel_hosts))
-
-if not hosts.has_key('redis'):
-    print(red("ERROR: no redis section!"))
-    sys.exit(1)
-else:
-    redis_hosts = hosts['redis'].split(' ')
-    print("Redis list:", cyan(redis_hosts))
-
-def selectMaster():
-    ''' pick up a random server to be our pod master
+    ''' read hosts.yml file and set roles accordingly
     '''
+    with open(host_file, 'r') as hf:
+        hosts = yaml.safe_load(hf)
+
+    if not hosts.has_key('sentinels'):
+        print(red("ERROR: no sentinels section!"))
+        sys.exit(1)
+    else:
+        sentinel_hosts = hosts['sentinels'].split(' ')
+        print("Sentinel list:", cyan(sentinel_hosts))
+
+    if not hosts.has_key('redis'):
+        print(red("ERROR: no redis section!"))
+        sys.exit(1)
+    else:
+        redis_hosts = hosts['redis'].split(' ')
+        print("Redis list:", cyan(redis_hosts))
+
+    master = selectMaster(redis_hosts)
+    slaves = selectSlaves(redis_hosts)
+
+
+    # only set roles after electing master and define slave list
+    env.roledefs = {
+            'sentinels': sentinel_hosts,
+            'redis': redis_hosts,
+            'master': master,
+            'slaves': slaves
+        }
+
+def selectMaster(redis_hosts):
+    #pick up a random server to be our pod master
+
     selectMaster.master = random.choice(redis_hosts)
     global master
     return selectMaster.master
-master = selectMaster()
 
-def selectSlaves():
-    ''' from redis host list, remove elected master
-    '''
-    global slaves
+def selectSlaves(redis_hosts):
+    # from redis host list, remove elected master
+
     slaves = redis_hosts[:]
     slaves.remove(master)
     return slaves
-slaves = selectSlaves()
-
-''' only set roles after electing master and define slave list
-'''
-env.roledefs = {
-        'sentinels': sentinel_hosts,
-        'redis': redis_hosts,
-        'master': master,
-        'slaves': slaves
-    }
 
 @roles('redis')
 def runRedis(name, port):
@@ -135,9 +149,11 @@ def updateSentinels(name, port):
         local(sentinelSetParallelCmd)
 
 @task
-def podName(name, port):
-    ''' pick pod name to use like 'podName:redis-shoemaker,port'
+def podName(name, port, cluster):
+    ''' pick pod name to use like 'podName:redis-shoemaker,port,redis-cluster-2'
     '''
+    execute(selectHostFile, cluster);
+    print("Cluster Name:", red(cluster))
     print("Pod Name:", green(name))
     print("Elected Master:", blue(master))
     print("Slave list:", cyan(slaves))
