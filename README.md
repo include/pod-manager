@@ -10,7 +10,7 @@ This simple tool uses Fabric to automate the creation of new Redis Pods running 
 ## Install
 
     pip install fabric
-    
+
 ## Configure
 
 ### config.yml
@@ -21,7 +21,7 @@ This simple tool uses Fabric to automate the creation of new Redis Pods running 
 * `sentinel.key`: the AWS tag key you have defined for sentinels
 * `sentinel.value`: the AWS tag value you defined for sentinels
 * `redis.key`: same as above but for redis hosts
-* `redis.value`: same as above but for redis hosts 
+* `redis.value`: same as above but for redis hosts
 
 ### hosts.yml
 
@@ -41,7 +41,7 @@ Something like:
         172.22.42.239
         172.22.43.81
         172.22.43.48
-            
+
 ## Usage
 
 ### Task list
@@ -50,11 +50,11 @@ Something like:
 
 ### New Pod
 
-    fab podName:<YOURPODNAME>,<REDISPORT>
-    
+    fab podName:<YOURPODNAME>,<REDISPORT>,<CLUSTER>
+
 _ie:_
 
-    fab podName:colossus,7190
+    fab podName:colossus,7190,redis-cluster-2
 
 ## TODO
 
